@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIS Unique Courses Extractor V2.0</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 48px;
+            max-width: 680px;
+            width: 100%;
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(120, 80, 255, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(80, 200, 255, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #7c3aed, #3b82f6);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 28px;
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .upload-zone {
+            position: relative;
+            z-index: 1;
+            border: 2px dashed rgba(124, 58, 237, 0.4);
+            border-radius: 16px;
+            padding: 40px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(124, 58, 237, 0.05);
+            margin-bottom: 24px;
+        }
+
+        .upload-zone:hover {
+            border-color: rgba(124, 58, 237, 0.8);
+            background: rgba(124, 58, 237, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.2);
+        }
+
+        .upload-zone.dragover {
+            border-color: #7c3aed;
+            background: rgba(124, 58, 237, 0.15);
+            transform: scale(1.02);
+        }
+
+        .upload-zone.has-file {
+            border-color: rgba(34, 197, 94, 0.6);
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .upload-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .file-name {
+            color: #a78bfa;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 8px;
+            word-break: break-all;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed, #3b82f6);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.5);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .status {
+            position: relative;
+            z-index: 1;
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        .status-msg {
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-msg.info {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+
+        .status-msg.success {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86efac;
+        }
+
+        .status-msg.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .stats {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .footer {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            margin-top: 32px;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 12px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📊</div>
+            <h1>SIS Unique Courses Extractor</h1>
+            <p class="subtitle">Upload your SIS Result Sheet &middot; Extract courses &amp; CGPA</p>
+        </div>
+
+        <div class="upload-zone" id="uploadZone">
+            <span class="upload-icon">📁</span>
+            <div class="upload-text">Click to upload or drag &amp; drop</div>
+            <div class="upload-hint">Supports .xlsx files from SIS</div>
+            <div class="file-name hidden" id="fileName"></div>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+
+        <button class="btn btn-primary" id="processBtn" disabled>
+            <span id="btnText">⚡ Extract &amp; Generate Excel</span>
+            <span class="spinner hidden" id="btnSpinner"></span>
+        </button>
+
+        <div class="status" id="statusArea"></div>
+        <div class="stats hidden" id="statsArea">
+            <div class="stat-card">
+                <div class="stat-value" id="statStudents">0</div>
+                <div class="stat-label">Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statCourses">0</div>
+                <div class="stat-label">Unique Courses</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statCodes">0</div>
+                <div class="stat-label">Course Codes</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Version 2.0 &middot; Haitham El-Hussieny :)
+        </div>
+    </div>
+
+    <script>
+    // ===== FULL ch_data (Course Code -> Credit Hours) =====
+    const chData = {
+        'ADF211':3,'ADF112':3,'ADF114':3,'ADF127':3,'ADF129':4,'ADF225':3,'ADF316':3,
+        'IPD211':4,'ADF328':3,'IPD221':4,'IPD222':3,'ADF413':3,'IPD323':3,'IPD311':4,
+        'IPD312':3,'IPD313':3,'IPD412':3,'IPD321':4,'IPD322':3,'PWP424':4,'IPD431':3,
+        'IPD422':3,'IPD411':4,'PGP423':5,'IPD421':4,'IPD432':3,'PGP433':5,'PWP434':4,
+        'ADE111':3,'ADE112':3,'ADE113':3,'ADE114':3,'ADE115':3,'ADE116':3,'IPD425':3,
+        'IPD324':3,'IPD426':3,'IPD417':3,'IPD314':3,'IPD325':3,'IPD315':3,'IPD414':3,
+        'IPD415':3,'IPD416':3,'IFD425':3,'IFD414':3,'IFD325':3,'IFD415':3,'IFD426':3,
+        'IFD416':3,'IFD314':3,'IFD315':3,'IFD324':3,'IFD417':3,'IFD211':4,'IFD222':4,
+        'IFD431':3,'IFD312':3,'IFD313':4,'IFD422':3,'IFD321':3,'IFD322':4,'IFD323':3,
+        'FWP424':4,'IFD411':3,'IFD412':4,'IFD413':3,'FGP423':5,'IFD421':4,'IFD432':3,
+        'FGP433':5,'FWP434':4,'GMD426':3,'GMD314':3,'GMD324':3,'GMD325':3,'GMD414':3,
+        'GMD415':3,'GMD315':3,'GMD425':3,'GMD416':3,'GMD417':3,'GMD211':4,'GMD221':4,
+        'GMD222':3,'GMD422':3,'GMD311':4,'GMD312':3,'GMD313':3,'GMD421':3,'GMD321':4,
+        'GMD322':3,'GMD323':3,'GWP424':4,'GMD411':4,'GMD431':3,'GMD413':3,'GGP423':5,
+        'GMD412':4,'GMD432':3,'GGP433':5,'GWP434':4,'FCA425':3,'FCA426':3,'FCA314':3,
+        'FCA324':3,'FCA325':3,'FCA414':3,'FCA415':3,'FCA416':3,'FCA417':3,'FCA315':3,
+        'FCA211':4,'FCA221':4,'FCA222':3,'FCA421':3,'FCA311':4,'FCA312':3,'FCA313':3,
+        'FCA321':4,'FCA322':3,'FCA323':3,'FCA422':3,'CWP424':4,'FCA411':4,'FCA432':3,
+        'FCA413':3,'CGP423':5,'FCA412':4,'FCA431':3,'CGP433':5,'CWP434':4,'IPD413':3,
+        'IFD311':3,'BIO111':3,'ARC111':4,'ARC112':2,'ARC121':2,'ARC122':4,'ARC211':2,
+        'ARC212':4,'ARC213':4,'ARC222':3,'ARC224':3,'ARC315':2,'ARC321':2,'ARC322':3,
+        'ARC324':3,'ARC411':3,'ARC414':2,'ARC415':2,'ARC421':3,'ARC325':3,'ARC326':3,
+        'ARC327':3,'ARC328':3,'ARC329':3,'ARC426':3,'ARC427':3,'ARC428':3,'ARC429':3,
+        'ARC221':2,'ARC223':4,'ARC311':2,'ARC312':3,'ARC313':4,'ARC314':2,'ARC323':4,
+        'ARC412':4,'ARC413':4,'ARC422':4,'ARC424':2,'ARC433':3,'ARC434':3,'ARC435':3,
+        'ARC423':2,'ARC431':6,'ARC432':4,'ARC425':3,'IFD221':3,'PMC111':3,'PMC123':3,
+        'PMC124':3,'PMC112':3,'PBM121':2,'PIP111':1,'PHG111':3,'MED122':3,'PIP122':3,
+        'MED111':1,'NPC111':2,'PHG122':3,'NPC122':1,'PMC215':3,'PMC216':3,'NPC213':1,
+        'PHG213':3,'MED213':3,'PIP213':3,'PBM222':3,'PMI221':3,'PMC227':3,'PIP224':3,
+        'PBM313':3,'PCT221':1,'PMI312':3,'PHG314':3,'PMI323':3,'PIP315':3,'PIP326':3,
+        'PMC318':3,'PCT312':3,'PHG325':3,'PMI414':3,'PIP327':3,'PCT414':3,'PCT323':3,
+        'PMC329':3,'PCP421':3,'PCT425':2,'PCT426':3,'PCP422':2,'PIP420':3,'PCP423':3,
+        'PMI515':3,'PCP514':3,'PMI516':2,'PHG517':3,'PHG416':2,'PMC410':2,'PBM414':3,
+        'PIP418':3,'PIP419':1,'PIP511':1,'PMC521':3,'PMC522':3,'MED525':1,'PCP525':2,
+        'PIP522':2,'PCP526':2,'PCP527':2,'PMC311':2,'PCT311':2,'PHG311':2,'PMC322':2,
+        'PIT321':2,'PIT522':2,'PCP511':2,'PHC311':2,'PCT412':2,'PCT513':2,'PMI512':2,
+        'PMI523':2,'PMI421':2,'PBM411':2,'MED224':2,'LRA415':1,'MTH114':1,
+        'LRA101P':1,'LRA103P':1,'LRA104P':1,'LRA105P':1,'LRA108P':1,'LRA102P':1,
+        'LRA106P':1,'LRA107P':1,'LRA109P':1,'LRA110P':1,'LRA201P':1,'LRA202P':1,
+        'LRA204P':1,'LRA205P':1,'LRA206P':1,'LRA207P':1,'LRA208P':1,'LRA302P':1,
+        'LRA303P':1,'LRA304P':1,'LRA305P':1,'LRA306P':1,'LRA405P':1,'LRA406P':1,
+        'LRA407P':1,'LRA408P':1,'LRA409P':1,'LRA410P':1,'LRA411P':1,'LRA203P':1,
+        'NPC324':1,'NPC515':2,'NPC526':1,'CSC111':3,'CSC121':3,'CSC122':3,'CNC311':3,
+        'CSC211':3,'CNC314':3,'CNC312':3,'CNC321':3,'CNC323':3,'CSC221':3,'CNC325':3,
+        'CNC327':3,'AID312':3,'CNC411':3,'CSC314':3,'CNC413':3,'CNC415':3,'CSC321':3,
+        'CSC322':3,'CNC414':2,'CSC323':3,'CNC421':3,'CSC324':3,'CNC422':3,'CSC410':3,
+        'CSC411':3,'CSC412':3,'CSC414':3,'CSC413':2,'CSC424':4,'BIF311':3,'BIF312':3,
+        'CSC422':3,'BIF321':3,'BIF322':3,'CSC423':5,'BIF323':3,'BIF411':3,'BIF412':3,
+        'BIF413':3,'BIF421':3,'BIF426':5,'CNC423':5,'AID311':3,'AID321':3,'AID322':3,
+        'AID323':3,'AID324':3,'AID411':3,'AID412':3,'AID413':3,'AID414':2,'AID424':4,
+        'AID423':5,'AID421':3,'AID422':3,'ACM215':3,'ACM422':3,'LRA208':2,'CNC424':4,
+        'BIF410':2,'BIF420':4,'CNC322':3,'CNC410':3,'CNC324':3,'CNC412':3,'CNC419':3,
+        'CNC328':3,'CNC320':3,'CNC326':3,'CSC415':3,'CNC416':3,'CSC421':3,'CNC329':3,
+        'CNC417':3,'CNC418':3,'CSC417':3,'CSC418':3,'CSC419':3,'CSC425':3,'CSC426':3,
+        'CSC427':3,'CSC428':3,'CSC429':3,'AID426':3,'BIF324':3,'BIF325':3,'BIF326':3,
+        'BIF327':3,'BIF328':3,'BIF329':3,'BIF414':3,'BIF415':3,'BIF416':3,'BIF424':3,
+        'BIF425':3,'MTH212':3,'CHM113':3,'ECE223':3,'PHY113':3,'PHY123':3,'CSC112':3,
+        'CNC111':3,'CSC113':3,'CSC114':3,'AID111':3,'CSC416':3,'AID416':3,'AID328':3,
+        'AID427':3,'AID428':3,'AID326':3,'AID417':3,'AID327':3,'AID425':3,'AID325':3,
+        'AID429':3,'ECE111':3,'ECE213':3,'ECE214':3,'CSE214':3,'CNC222':3,'AID221':3,
+        'PHY419':2,'CNC223':3,'CSC315':3,'CSC316':2,'CSC317':3,
+        'LRA101':2,'LRA102':2,'LRA103':2,'LRA201':2,'LRA202':2,'LRA301':2,'LRA401':1,
+        'LRA402':1,'LRA405':2,'LRA406':2,'LRA104':2,'LRA105':2,'LRA106':2,'LRA107':2,
+        'LRA108':2,'LRA109':2,'LRA110':2,'LRA203':2,'LRA204':2,'LRA205':2,'LRA206':2,
+        'LRA207':2,'LRA302':2,'LRA303':2,'LRA304':2,'LRA305':2,'LRA306':2,'LRA403':1,
+        'LRA404':1,'LRA407':2,'LRA408':2,'LRA409':2,'LRA410':2,'LRA411':2,
+        'ECO111':3,'MGT111':3,'ACC111':3,'ECO121':3,'HUM121':2,'ACC121':3,'STA231':2,
+        'MGT231':3,'LAW231':2,'MKT231':3,'ACC231':3,'HRM241':3,'STA241':2,'FIN241':3,
+        'ACC241':3,'MGT351':3,'ACC351':3,'FIN351':3,'CRC361':2,'FIN361':3,'ACC361':3,
+        'ACC362':3,'MGT471':3,'MGT472':3,'ACC471':3,'ACC472':4,'ACC481':3,'ACC482':3,
+        'ACC483':4,'HRM242':3,'HRM351':3,'HRM361':3,'HRM362':3,'HRM471':3,'HRM481':3,
+        'HRM482':3,'HRM484':3,'HRM485':3,'HRM487':3,'HRM472':4,'HRM483':4,'HRM231':3,
+        'ACC352':2,'ENT241':3,'ENT351':3,'ENT242':3,'ENT362':3,'ENT471':3,'ENT481':3,
+        'ENT482':3,'ENT484':3,'ENT485':3,'ENT486':3,'ENT487':3,'ENT472':4,'ENT483':4,
+        'MGT321':3,'ENT361':3,'FIN362':3,'FIN363':3,'FIN471':3,'FIN481':3,'FIN482':3,
+        'FIN484':3,'FIN485':3,'FIN486':3,'FIN487':3,'FIN472':4,'FIN483':4,'MKT232':3,
+        'MKT241':3,'MKT351':3,'MKT361':3,'MKT362':3,'MKT471':3,'MKT481':3,'MKT482':3,
+        'MKT484':3,'MKT485':3,'MKT486':3,'MKT487':3,'MKT488':3,'MKT472':4,'MKT483':4,
+        'ACC484':3,'ACC485':3,'ACC486':3,'ACC487':3,'ACC488':3,'CRC112':2,'CRC232':2,
+        'CRC234':2,'CRC362':2,'MGT324':3,'CSE352':3,'AIS522.':2,'LRA114':0,
+        'ECO111D':2,'MTH111':3,'PHY111':3,'CHM111':2,'PHY112':1,'CHM112':1,'MCE111':3,
+        'MTH121':3,'PHY121':3,'CHM121':2,'PHY122':1,'MTH112':3,'MTH122':3,'IME321':3,
+        'IME352':3,'IME325':3,
+        'ECE450':3,'ECE451':3,'ECE452':3,'ECE454':3,'CSE453':3,'CSE454':3,'CSE455':3,
+        'CPE450':3,'CPE451':3,'CPE452':3,'CPE453':3,'CPE454':3,'CPE455':3,'CPE456':3,
+        'MTH501':3,'MTH502':3,'CSE450':3,'CSE452':3,'ECE221':2,'IME111':2,'CHM122':1,
+        'BIO121':2,'MTH211':2,'IME121':3,'EPE121':3,'EPE122':1,'CSE211':2,'CSE212':1,
+        'CPE211':2,'IME211':2,'IME212':1,'EPE221':2,'EPE222':1,'MSE221':2,'MSE222':1,
+        'ERE221':2,'ERE222':1,'CPE212':1,'MTE211':3,'ECE222':1,'CSE213':3,'ECE211':2,
+        'ECE310':2,'ECE311':1,'ECE312':2,'ECE313':1,'ECE314':2,'ECE315':1,'ECE316':3,
+        'ECE317':2,'ECE318':1,'ECE319':2,'ECE321':2,'ECE322':2,'ECE323':1,'ECE324':2,
+        'ECE325':1,'ECE326':2,'ECE327':1,'ECE328':2,'ECE329':1,'ECE411':2,'ECE412':1,
+        'ECE413':2,'ECE414':1,'MTE324':2,'MTE325':1,'ECE421':2,'ECE422':1,'ECE430':3,
+        'ECE431':3,'ECE432':3,'ECE433':3,'ECE434':3,'ECE435':3,'ECE436':3,'ECE437':3,
+        'ECE438':3,'ECE439':3,'ECE440':3,'ECE441':3,'ECE442':3,'ECE443':3,
+        'CSE311':3,'CSE312':3,'CSE313':2,'CSE314':1,'CSE315':2,'CSE317':3,'CSE321':2,
+        'CSE322':2,'CSE323':1,'CSE324':2,'CSE325':1,'CSE326':3,'CSE328':2,'CSE329':1,
+        'CSE411':3,'CSE412':2,'CSE413':1,'CSE424':2,'CSE425':1,'CSE426':3,'CSE421':3,
+        'CSE422':3,'CSE423':3,'CSE427':3,'CSE428':3,'CSE429':3,'CSE431':3,'CSE432':3,
+        'CSE433':3,'CSE434':3,'CSE435':3,'CSE420':3,'CSE500':7,
+        'EPE310':2,'EPE320':2,'EPE321':2,'EPE322':1,'EPE323':2,'EPE324':1,'EPE325':2,
+        'EPE326':1,'EPE412':1,'EPE413':2,'EPE414':1,'EPE420':3,'EPE421':3,'EPE422':2,
+        'EPE423':1,'EPE411':2,'ECE444':3,'MTE430':3,'MTE434':3,'ECE420':3,'ECE500':7,
+        'ECE599':4,
+        'IME311':2,'IME312':3,'IME313':3,'IME314':3,'IME315':3,'IME316':3,'IME320':2,
+        'IME322':2,'IME323':1,'IME324':3,'IME326':1,'IME411':3,'IME412':3,
+        'IME421':3,'IME423':3,'IME431':3,'IME432':3,'IME433':3,'IME441':3,'IME442':3,
+        'IME443':3,'IME444':3,'IME445':3,'IME451':3,'IME452':3,'IME453':3,'IME454':3,
+        'IME455':3,'IME456':3,'IME457':3,'IME458':3,'IME459':3,'IME420':3,'IME500':7,
+        'IME499':4,
+        'CPE213':3,'CPE221':2,'CPE223':2,'CPE311':2,'CPE312':3,'CPE313':3,'CPE314':3,
+        'CPE315':3,'CPE316':3,'CPE321':2,'CPE322':3,'CPE323':3,'CPE324':3,'CPE325':3,
+        'CPE411':3,'CPE412':3,'CPE421':3,'CPE422':3,'CPE423':3,'CPE424':3,'CPE425':3,
+        'CPE426':3,'CPE427':3,'CPE428':3,'CPE429':3,'CPE430':3,'CPE431':3,'CPE432':3,
+        'CPE433':3,'CPE434':3,'CPE435':3,'CPE436':3,'CPE437':3,'CPE438':3,'CPE439':3,
+        'CPE440':3,'CPE441':3,'CPE420':3,'CPE500':7,'CPE499':4,
+        'ERE223':2,'ERE311':2,'ERE312':3,'ERE313':3,'ERE315':1,'ERE316':3,'ERE317':2,
+        'ERE318':3,'ERE321':2,'ERE322':3,'ERE323':3,'ERE324':3,
+        'ERE411':3,'ERE412':3,'ERE413':3,'ERE414':3,'ERE415':3,'ERE416':3,'ERE417':3,
+        'ERE418':3,'ERE419':3,'ERE420':3,'ERE421':3,'ERE422':3,'ERE423':3,'ERE424':3,
+        'ERE425':3,'ERE426':3,'ERE427':3,'ERE428':3,'ERE429':3,'ERE430':3,'ERE431':3,
+        'ERE432':3,'ERE433':3,'ERE434':3,'ERE435':3,'ERE500':7,'ERE499':4,
+        'EPE500':7,'EPE599':4,'EPE424':3,'EPE425':3,'EPE426':3,'EPE427':3,'EPE428':3,
+        'EPE429':3,'EPE430':3,'EPE431':3,'EPE432':3,'ECE212':1,'CSE499':4,
+        'MTE311':2,'MTE312':3,'MTE313':3,'MTE314':2,'MTE315':1,'MTE321':2,'MTE322':3,
+        'MTE323':3,'MTE326':2,'MTE327':1,'MTE411':2,'MTE412':1,'MTE413':3,'MTE420':3,
+        'MTE421':3,'MTE422':3,'MTE423':3,'MTE424':3,'MTE425':3,'MTE426':3,'MTE427':3,
+        'MTE428':3,'MTE429':3,'MTE431':3,'MTE432':3,'MTE433':3,'MTE435':3,'MTE436':3,
+        'MTE437':3,'MTE438':3,'MTE439':3,'MTE500':7,
+        'MSE311':3,'MSE312':3,'MSE313':3,'MSE314':3,'MSE315':3,'MSE316':2,'MSE321':2,
+        'MSE322':3,'MSE323':3,'MSE324':3,'MSE325':3,'MSE410':3,'MSE411':3,'MSE412':3,
+        'MSE414':3,'MSE415':3,'MSE416':3,'MSE417':3,'MSE418':3,'MSE419':3,'MSE421':3,
+        'MSE422':3,'MSE423':3,'MSE424':3,'MSE425':3,'MSE426':3,'MSE427':3,'MSE428':3,
+        'MSE429':3,'MSE430':3,'MSE431':3,'MSE432':3,'MSE433':3,'MSE434':3,'MSE435':3,
+        'MSE436':3,'MSE437':3,'MSE438':3,'MSE439':3,'MSE440':3,'MSE500':7,'MSE499':4,
+        'IME221':2,'MTE499':4,'CSE414':2,'EPE212':1,'ERE213':3,'IME327':3,'IME328':2,
+        'IME329':1,'IME413':3,'IME414':3,'IME422':3,'MSE420':3,'ECE499':4,
+        'CSE436':3,'CSE437':3,'CSE438':3,'IME471':3,'IME472':3,'IME473':3,'IME474':3,
+        'IME475':3,'IME481':3,'IME482':3,'IME483':3,'IME484':3,'IME485':3,'IME491':3,
+        'IME492':3,'IME493':3,'IME494':3,'IME495':3,'IME496':3,'IME497':3,
+        'MTE414':2,'MTE415':1,'EPE499':4,'MTE599':4,'CSE600':0,'CSE900':0,
+        'MIE211':3,'MIE312':2,'MIE313':1,'MIE314':3,'MIE315':1,'MIE320':3,'MIE322':3,
+        'MIE324':2,'MIE325':1,'MIE410':3,'MIE412':3,'MIE414':3,'MIE422':3,'MIE426':3,
+        'MIE316':3,'MIE430':3,'MIE328':3,'MIE421':3,'MIE420':3,'MIE423':3,'MIE437':3,
+        'MIE310':2,'MIE450':3,'MIE452':3,'MIE454':3,'MIE456':3,'MIE458':3,'MIE460':3,
+        'MIE462':3,'MIE464':3,'MIE466':3,'MIE468':3,'MIE424':3,'MIE428':7,'MIE499':4,
+        'ENV311':2,'ENV312':4,'ENV313':4,'ENV314':4,'ENV315':4,'ENV316':4,'ENV321':4,
+        'ENV322':4,'ENV323':4,'ENV324':4,'ENV325':4,'ENV411':5,'ENV412':4,'ENV421':4,
+        'ENV422':4,'ENV420':3,'ENV500':7,'ENV499':4,'ENV413':4,'ENV414':4,'ENV415':4,
+        'ENV416':4,'ENV417':4,'ENV418':4,'ENV423':4,'ENV424':4,'ENV425':4,'ENV426':4,
+        'ENV427':4,'ENV428':4,
+        'ECE573':3,'ECE574':3,'ECE577':3,'ECE578':3,'ECE618':3,'ECE619':3,'ECE621A':3,
+        'ECE623A':3,'CSE521':3,'CSE522':3,'PHY224':2,'ECE627':6,'ECE641':3,'ECE664':6,
+        'CSE666':6,'CSE723':3,'CSE724':3,
+        'LRA111':1,'LRA112':2,'LRA113':2,'LRA121':1,'LRA122':2,'LRA123':2,'LRA211':1,
+        'LRA212':2,'LRA321':2,'LRA421':2,'LRA213':2,'LRA214':2,'LRA215':2,'LRA216':2,
+        'LRA221':2,'LRA222':2,'LRA223':2,'LRA224':2,'LRA311':2,'LRA312':2,'LRA313':2,
+        'LRA314':2,'CSE111':2,'MTH221':3,'MTE111':3,'ECE400':0,'ECE410':3,'MTH312':3,
+        'ERE310':3,
+        'ASE311':2,'ASE312':3,'ASE313':3,'ASE314':2,'ASE321':3,'ASE322':2,'ASE323':3,
+        'ASE411':3,'ASE412':3,'ASE413':2,'ASE431':3,'ASE400':0,'ASE410':3,'ASE421':3,
+        'ASE422':3,'ASE420':6,'ASE432':3,'ASE433':3,'ASE434':3,'ASE435':3,'ASE436':3,
+        'ASE437':3,'ASE442':3,'ASE441':3,'ASE443':3,'ASE444':3,'ASE445':3,'ASE446':3,
+        'ASE447':3,'ASE448':3,
+        // Hyphenated variants
+        'ECE-221':3,'ECE-222':3,'ECE-223':3,'CSE-311':3,'ECE-313':3,'ECE-314':3,
+        'ERE-310':3,'EPE-326':3,'LRA-111':1,'LRA-112':2,'LRA-113':2,'LRA-121':1,
+        'LRA-122':2,'LRA-123':2,'LRA-211':1,'LRA-212':2,'LRA-321':2,'LRA-411':2,
+        'CSE-111':2,'LRA-213':2,'LRA-214':2,'LRA-215':2,'LRA-216':2,'ECE-311':3,
+        'LRA-221':2,'LRA-222':2,'LRA-223':2,'LRA-224':2,'LRA-311':2,'LRA-312':2,
+        'ECE-312':3,'LRA-313':2,'LRA-314':2,'ECE-315':2,'MTH-111':3,'ECE-321':3,
+        'PHY-111':3,'ECE-326':3,'CHM-111':1,'ECE-327':3,'ECE-328':2,'ECE-414':3,
+        'ECE-416':3,'ECE-418':2,'ECE-431':3,'ECE-432':3,'ECE-426':2,'ECE-430':3,
+        'ECE-433':3,'ECE-434':3,'PHY-112':1,'CHM-112':1,'ECE-428':3,'MTH-121':3,
+        'PHY-121':3,'CHM-121':1,'ECE-413':3,'PHY-122':1,'CHM-122':1,'MTH-211':3,
+        'MTH-221':3,'ECE-423':3,'ECE-400':0,'ECE-410':3,'ECE-420':6,'EPE-312':3,
+        'EPE-313':3,'CSE-312':3,'EPE-314':2,'CSE-323':2,'EPE-320':2,'EPE-321':3,
+        'EPE-322':3,'EPE-323':3,'CSE-315':2,'EPE-411':2,'EPE-412':3,'CSE-321':3,
+        'CSE-324':3,'EPE-414':3,'CSE-326':3,'EPE-421':3,'EPE-423':3,'EPE-425':3,
+        'EPE-426':3,'CSE-411':3,'EPE-427':3,'EPE-428':3,'CSE-412':3,'EPE-400':0,
+        'EPE-410':3,'CSE-426':3,'EPE-420':6,'CSE-424':3,'MTR-111':3,'CSE-421':2,
+        'CSE-429':2,'IME-111':2,'IME-121':3,'CSE-436':3,'CPE-211':3,'CSE-422':3,
+        'IME-211':3,'ECE-211':3,'CSE-211':2,'CSE-428':3,'EPE-221':3,'CSE-440':3,
+        'CSE-427':3,'CSE-433':3,'CSE-410':3,'CSE-400':0,'CSE-420':6,
+        'MIE-311':2,'MIE-312':2,'MIE-321':3,'MIE-324':3,'MIE-326':3,'MIE-327':2,
+        'MIE-411':3,'MIE-412':3,'MIE-413':3,'MIE-414':3,'MIE-415':2,'MIE-421':3,
+        'MIE-431':3,'MIE-432':3,'MIE-433':3,'MIE-434':3,'MIE-435':3,'MIE-451':3,
+        'MIE-452':3,'MIE-453':3,'MIE-454':3,'MIE-455':3,'MIE-456':3,'MIE-410':3,
+        'MIE-420':6,'MIE-400':0,
+        'MTR-311':2,'MSE-221':3,'MTR-221':3,'IME-222':3,'IME-311':3,'MTR-321':3,
+        'ERE-328':3,'ERE-329':3,'ERE-211':3,'ERE-212':3,'ERE-313':3,'EPE-319':3,
+        'ERE-315':3,'ECE-329':3,'ERE-325':2,'ERE-451':3,'ERE-452':2,'ERE-311':2,
+        'ERE-453':3,'EPE-418':3,'ECE-419':3,'ERE-400':0,'ERE-410':3,'ERE-461':2,
+        'ERE-420':6,'ERE-463':3,'ERE-446':3,'EPE-417':3,'ERE-464':3,'ERE-462':3,
+        'MTR-312':3,'MTR-322':3,'MTR-323':3,'MTR-324':2,'MTR-411':3,'MTR-412':3,
+        'MTR-413':3,'MTR-414':3,'MTR-415':2,'MTR-416':2,'MTR-422':3,'MTR-423':3,
+        'MTR-424':3,'MTR-425':3,'MTR-426':3,'MTR-427':3,'MTR-410':3,'MTR-420':6,
+        'MTR-400':0,
+        'ASE-311':2,'ASE-312':3,'ASE-313':3,'ASE-314':2,'ASE-321':3,'ASE-322':2,
+        'ASE-323':3,'ASE-411':3,'ASE-412':3,'ASE-413':2,'ASE-421':3,'ASE-422':3,
+        'ASE-410':3,'ASE-420':6,'ASE-400':0,'ASE-431':3,'ASE-432':3,'ASE-433':3,
+        'ASE-434':3,'ASE-435':3,'ASE-436':3,'ASE-437':3,'ASE-441':3,'ASE-442':3,
+        'ASE-443':3,'CPE-311':2,'ASE-444':3,'CPE-312':3,'ASE-445':3,'CPE-313':3,
+        'ASE-446':3,'CPE-314':3,'ASE-447':3,'CPE-329':3,'ASE-448':3,'CPE-321':3,
+        'CPE-322':3,'MSE-311':3,'MSE-312':3,'CPE-323':2,'MSE-313':2,'CPE-411':3,
+        'MSE-314':3,'CPE-412':3,'MSE-321':3,'CPE-413':2,'MSE-322':3,'MSE-323':3,
+        'MSE-411':3,'MSE-412':3,'MSE-413':3,'MSE-422':3,'MSE-421':3,'MSE-431':3,
+        'MSE-432':3,'MSE-433':3,'MSE-434':3,'MSE-435':3,'MSE-436':3,'MSE-410':3,
+        'MSE-420':6,'MSE-400':0,'CPE-400':0,'CPE-410':3,'CPE-421':2,'CPE-422':3,
+        'CPE-423':3,'CPE-420':6,'CPE-414':3,'CPE-417':3,'IME-310':2,'CPE-429':3,
+        'IME-312':3,'CPE-432':3,'IME-313':3,'CPE-433':3,'IME-314':3,'IME-321':2,
+        'IME-411':2,'IME-421':2,'IME-410':3,'IME-420':6,'IME-400':0,'IME-331':3,
+        'IME-332':3,'IME-431':3,'IME-432':3,'IME-451':3,'IME-433':3,'IME-434':3,
+        'IME-435':3,'IME-436':3,'IME-437':3,'IME-438':3,'IME-439':3,'IME-341':3,
+        'IME-342':3,'IME-441':3,'IME-442':3,'IME-443':3,'IME-444':3,'IME-351':3,
+        'IME-450':3,'IME-446':3,'IME-447':3,'IME-448':3,'IME-452':3,'IME-453':3,
+        'IME-454':3,'IME-455':3,'IME-456':3,'IME-457':3,'IME-458':3,'IME-459':3,
+        'ENV-221':3,'IME-339':3,'ENV-414':3,'ENV-415':3,'ENV-416':3,'ENV-311':3,
+        'ENV-424':3,'ENV-425':3,'ENV-312':3,'ENV-426':3,'ENV-313':3,'ENV-410':3,
+        'ENV-314':2,'ENV-420':6,'ENV-321':3,'ENV-322':3,'ENV-323':2,'ENV-400':0,
+        'ENV-412':3,'ENV-413':2,'ENV-421':3,'ENV-422':3,'ENV-423':3,'IME-361':3,
+        'IME-362':3,'IME-460':3,'IME-461':3,'IME-462':3,'IME-463':3,'IME-464':3,
+        'IME-465':3,'IME-466':3,'IME-467':3,'IME-468':3,'IME-469':3,'MTH-312':3,
+        'MTR-329':3,'MTR-319':3,'EPE-422':3,'EPE-424':3,'ERE-436':3,'ERE-434':3,
+        'ERE-437':3,'ERE-314':3,'ERE-316':3,'ERE-317':2,'ERE-431':3,'ERE-432':3,
+        'ERE-433':2,'ERE-441':3,'ERE-442':2,'ERE-443':3,'CPE-431':3,'ERE-318':3,
+        'ERE-319':3,'IME-221':2,'CPE-324':3,'MTR-313':3,'MTR-310':2,'ECE-317':3
+    };
+
+    // ===== DOM Elements =====
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileNameEl = document.getElementById('fileName');
+    const processBtn = document.getElementById('processBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const statusArea = document.getElementById('statusArea');
+    const statsArea = document.getElementById('statsArea');
+
+    let selectedFile = null;
+
+    // ===== Upload Handling =====
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+        uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+            handleFile(fileInput.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext !== 'xlsx' && ext !== 'xls') {
+            showStatus('Please upload an .xlsx or .xls file.', 'error');
+            return;
+        }
+        selectedFile = file;
+        fileNameEl.textContent = file.name;
+        fileNameEl.classList.remove('hidden');
+        uploadZone.classList.add('has-file');
+        processBtn.disabled = false;
+        showStatus('File loaded. Click the button to extract.', 'info');
+    }
+
+    // ===== Processing =====
+    processBtn.addEventListener('click', () => {
+        if (!selectedFile) return;
+        processFile(selectedFile);
+    });
+
+    function showStatus(msg, type) {
+        statusArea.innerHTML = `<div class="status-msg ${type}">${msg}</div>`;
+    }
+
+    function processFile(file) {
+        btnText.textContent = 'Processing...';
+        btnSpinner.classList.remove('hidden');
+        processBtn.disabled = true;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const range = XLSX.utils.decode_range(sheet['!ref']);
+
+                // ===== Search for cells containing "Name" =====
+                const nameCells = [];
+                for (let R = range.s.r; R <= range.e.r; R++) {
+                    for (let C = range.s.c; C <= range.e.c; C++) {
+                        const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                        const cell = sheet[addr];
+                        if (cell && typeof cell.v === 'string' && cell.v.includes('Name')) {
+                            nameCells.push({ row: R, col: C });
+                        }
+                    }
+                }
+
+                if (nameCells.length === 0) {
+                    showStatus('No student data found in the file.', 'error');
+                    resetBtn();
+                    return;
+                }
+
+                // ===== Find CGPA column in each header row =====
+                function findCGPAColumn(headerRow) {
+                    for (let C = range.s.c; C <= range.e.c; C++) {
+                        const addr = XLSX.utils.encode_cell({ r: headerRow, c: C });
+                        const cell = sheet[addr];
+                        if (cell && typeof cell.v === 'string' && cell.v.toUpperCase().includes('CGPA')) {
+                            return C;
+                        }
+                    }
+                    return null;
+                }
+
+                // ===== Get non-empty cells in a row =====
+                function getNonEmptyCells(rowIdx) {
+                    const cells = [];
+                    for (let C = range.s.c; C <= range.e.c; C++) {
+                        const addr = XLSX.utils.encode_cell({ r: rowIdx, c: C });
+                        const cell = sheet[addr];
+                        if (cell && cell.v !== undefined && cell.v !== null && cell.v !== '') {
+                            cells.push(cell.v);
+                        }
+                    }
+                    return cells;
+                }
+
+                // ===== Process each student =====
+                const outputRows = [];
+                const courseSet = new Set();
+                const courseList = [];
+
+                // Header row for output
+                outputRows.push([]); // placeholder, will fill after
+
+                for (const nameCell of nameCells) {
+                    const dataRow = nameCell.row + 1;
+                    const studentData = getNonEmptyCells(dataRow);
+
+                    // Find CGPA
+                    const cgpaCol = findCGPAColumn(nameCell.row);
+                    let cgpaValue = null;
+                    if (cgpaCol !== null) {
+                        // Match the user's modified logic: read from dataRow + 1 (row+2 from Name)
+                        const cgpaAddr = XLSX.utils.encode_cell({ r: dataRow + 1, c: cgpaCol });
+                        const cgpaCell = sheet[cgpaAddr];
+                        cgpaValue = cgpaCell ? cgpaCell.v : null;
+                    }
+
+                    // Insert CGPA right after the ID (index 1)
+                    const rowWithCGPA = [...studentData];
+                    if (cgpaValue !== null && cgpaValue !== undefined) {
+                        rowWithCGPA.splice(1, 0, cgpaValue); // insert after ID
+                    } else {
+                        rowWithCGPA.splice(1, 0, ''); // placeholder to keep columns aligned
+                    }
+                    outputRows.push(rowWithCGPA);
+
+                    // Collect unique courses (skip first 4 items: ID, CGPA, Name, etc.)
+                    const courses = studentData.slice(3);
+                    for (const course of courses) {
+                        if (!courseSet.has(course)) {
+                            courseSet.add(course);
+                            courseList.push(course);
+                        }
+                    }
+                }
+
+                // Set header row
+                if (outputRows.length > 1) {
+                    const maxCols = Math.max(...outputRows.slice(1).map(r => r.length));
+                    const header = [];
+                    for (let i = 0; i < maxCols; i++) header.push('');
+                    // Place "CGPA" header at column index 1 (after ID)
+                    if (maxCols > 1) header[1] = 'CGPA';
+                    outputRows[0] = header;
+                }
+
+                // ===== Build Unique List section =====
+                // 2 empty rows then "Unique List" header then the courses in one row
+                outputRows.push([]);
+                outputRows.push(['Unique List']);
+                outputRows.push(courseList);
+
+                // ===== Build Code List section =====
+                const codeEntries = [];
+                const codeList = [];
+                for (const item of courseList) {
+                    const parts = item.split(' - ').map(s => s.trim());
+                    for (let i = 0; i < parts.length; i += 2) {
+                        if (parts[i]) codeList.push(parts[i]);
+                    }
+                }
+
+                outputRows.push([]);
+                outputRows.push(['Code List', 'Course CH']);
+                for (const code of codeList) {
+                    const ch = chData[code];
+                    outputRows.push([code, ch !== undefined ? ch : '']);
+                }
+
+                // ===== Generate output Excel =====
+                const ws = XLSX.utils.aoa_to_sheet(outputRows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+
+                const outName = file.name.replace(/\.(xlsx|xls)$/i, '') + '_unique_list.xlsx';
+                XLSX.writeFile(wb, outName);
+
+                // ===== Update UI =====
+                document.getElementById('statStudents').textContent = nameCells.length;
+                document.getElementById('statCourses').textContent = courseList.length;
+                document.getElementById('statCodes').textContent = codeList.length;
+                statsArea.classList.remove('hidden');
+
+                showStatus(`✅ Done! Downloaded "${outName}" with ${nameCells.length} student(s) and ${courseList.length} unique courses.`, 'success');
+
+            } catch (err) {
+                showStatus(`Failed to process file: ${err.message}`, 'error');
+                console.error(err);
+            }
+            resetBtn();
+        };
+
+        reader.onerror = function() {
+            showStatus('Failed to read the file.', 'error');
+            resetBtn();
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    function resetBtn() {
+        btnText.textContent = '⚡ Extract & Generate Excel';
+        btnSpinner.classList.add('hidden');
+        processBtn.disabled = false;
+    }
+    </script>
+</body>
+</html>
